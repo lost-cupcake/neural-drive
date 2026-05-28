@@ -1,4 +1,4 @@
-# 🚗 NEURAL DRIVE — Multi-Task Learning for Autonomous Driving
+#  NEURAL DRIVE — Multi-Task Learning for Autonomous Driving
 
 <div align="center">
 
@@ -278,7 +278,16 @@ nuScenes annotations store positions in global GPS coordinates (e.g. [373, 1130]
 - [nuScenes Dataset](https://nuscenes.org) — Autonomous driving benchmark
 
 ---
+## 📦 Pretrained Checkpoint
 
+Download the trained model checkpoint (406MB) from Google Drive:
+
+**[⬇️ Download epoch_024_T4_BEST.pth]https://drive.google.com/file/d/1XThm0Myuygoiw9U4lKKjrPwJD99o0YxG/view?usp=sharing**
+
+Place it at:
+```
+checkpoints/epoch_024_T4_BEST.pth
+```
 ## 📄 License
 
 MIT License — free to use for research and educational purposes.
