@@ -38,7 +38,7 @@ Given 6 surround cameras + 1 LiDAR scan, the model produces:
 ![Inference Results](screenshots/inference_results.png)
 
 ### Interactive Dashboard Demo
-![Dashboard](screenshots/dashboard_demo.png)
+![Dashboard](screenshots/dashboard-3.png)
 
 ---
 
