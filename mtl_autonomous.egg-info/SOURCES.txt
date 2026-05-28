@@ -1,0 +1,5 @@
+setup.py
+mtl_autonomous.egg-info/PKG-INFO
+mtl_autonomous.egg-info/SOURCES.txt
+mtl_autonomous.egg-info/dependency_links.txt
+mtl_autonomous.egg-info/top_level.txt

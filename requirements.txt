@@ -1,0 +1,15 @@
+torch>=2.0.0
+torchvision>=0.15.0
+nuscenes-devkit>=1.1.11
+numpy>=1.24.0
+einops>=0.7.0
+timm>=0.9.0
+open3d>=0.17.0
+pyquaternion>=0.9.9
+shapely>=2.0.0
+opencv-python>=4.8.0
+tensorboard>=2.14.0
+pyyaml>=6.0
+tqdm>=4.66.0
+matplotlib>=3.7.0
+scipy>=1.11.0

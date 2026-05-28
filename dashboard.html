@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEURAL DRIVE — Autonomous Perception</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:     #050508;
+  --panel:  #08080d;
+  --border: #1a1a2e;
+  --pink:   #ec4899;
+  --green:  #22c55e;
+  --blue:   #3b82f6;
+  --purple: #a855f7;
+  --text:   #cbd5e1;
+  --dim:    #334155;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(236,72,153,0.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(236,72,153,0.025) 1px,transparent 1px);
+  background-size:50px 50px;pointer-events:none;z-index:0;
+}
+.wrapper{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:16px 24px 40px;}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 18px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.logo-wrap{display:flex;align-items:center;gap:14px;}
+.logo-box{width:44px;height:44px;background:linear-gradient(135deg,#ec4899,#be185d);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(236,72,153,0.35);}
+.logo-box svg{width:24px;height:24px;}
+.logo-text h1{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:3px;color:#ec4899;}
+.logo-text p{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:2px;}
+.pills{display:flex;gap:10px;}
+.pill{font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid;letter-spacing:1px;}
+.pill.on{color:var(--green);border-color:var(--green);background:rgba(34,197,94,0.08);}
+.pill.model{color:#ec4899;border-color:#ec4899;background:rgba(236,72,153,0.08);}
+.pill.gpu{color:var(--blue);border-color:var(--blue);background:rgba(59,130,246,0.08);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.metric{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;}
+.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.metric.m1::before{background:linear-gradient(90deg,#ec4899,#f472b6);}
+.metric.m2::before{background:linear-gradient(90deg,#22c55e,#4ade80);}
+.metric.m3::before{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+.metric.m4::before{background:linear-gradient(90deg,#a855f7,#c084fc);}
+.metric-val{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;line-height:1;margin-bottom:4px;}
+.metric.m1 .metric-val{color:#ec4899;}
+.metric.m2 .metric-val{color:#22c55e;}
+.metric.m3 .metric-val{color:#3b82f6;}
+.metric.m4 .metric-val{color:#a855f7;}
+.metric-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;}
+
+.main{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);}
+.panel-title{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:#ec4899;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.panel-badge{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);padding:3px 9px;border:1px solid var(--border);border-radius:4px;}
+.panel-body{padding:18px;}
+
+.upload-zone{grid-column:1/2;grid-row:1/2;}
+.drop{border:2px dashed var(--border);border-radius:10px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;}
+.drop:hover,.drop.over{border-color:#ec4899;background:rgba(236,72,153,0.03);}
+.drop.loaded{border-style:solid;border-color:var(--green);}
+.drop-icon{width:52px;height:52px;border:2px solid var(--dim);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;transition:all 0.3s;}
+.drop:hover .drop-icon{border-color:#ec4899;transform:translateY(-2px);}
+.drop-label{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);text-align:center;line-height:1.8;}
+.drop-label span{color:#ec4899;}
+#fi{display:none;}
+#prev{width:100%;height:240px;object-fit:cover;border-radius:8px;display:none;}
+.img-tag{position:absolute;bottom:10px;right:10px;background:rgba(5,5,8,0.9);border:1px solid var(--green);border-radius:5px;padding:3px 9px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--green);display:none;}
+
+.btn{width:100%;margin-top:14px;padding:13px;background:transparent;border:1px solid #ec4899;border-radius:8px;color:#ec4899;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;transition:all 0.3s;}
+.btn:hover{background:rgba(236,72,153,0.1);box-shadow:0 0 20px rgba(236,72,153,0.2);}
+.btn:disabled{opacity:0.3;cursor:not-allowed;}
+.btn.running{animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+.bev-panel{grid-column:2/3;grid-row:1/3;}
+#bev{width:100%;aspect-ratio:1;border-radius:8px;display:block;background:#03030a;}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:12px;}
+.leg{display:flex;align-items:center;gap:7px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+.results-panel{grid-column:1/2;grid-row:2/3;}
+.seg-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.seg-row{display:flex;align-items:center;gap:10px;}
+.seg-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);width:100px;flex-shrink:0;}
+.seg-track{flex:1;height:5px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;}
+.seg-fill{height:100%;border-radius:3px;width:0%;transition:width 1.3s cubic-bezier(0.4,0,0.2,1);}
+.seg-pct{font-family:'Share Tech Mono',monospace;font-size:9px;width:32px;text-align:right;}
+.obj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.obj-card{background:rgba(236,72,153,0.02);border:1px solid var(--border);border-radius:8px;padding:10px;transition:all 0.3s;}
+.obj-card.lit{border-color:#ec4899;background:rgba(236,72,153,0.07);}
+.obj-card.lit2{border-color:var(--green);background:rgba(34,197,94,0.07);}
+.obj-name{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:5px;}
+.obj-count{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;line-height:1;}
+.obj-card.lit .obj-count{color:#ec4899;}
+.obj-card.lit2 .obj-count{color:var(--green);}
+.obj-bar{height:2px;background:var(--border);border-radius:1px;margin-top:7px;overflow:hidden;}
+.obj-bar-fill{height:100%;border-radius:1px;width:0%;transition:width 1s;}
+.obj-card.lit .obj-bar-fill{background:#ec4899;}
+.obj-card.lit2 .obj-bar-fill{background:var(--green);}
+
+.loader{position:absolute;inset:0;background:rgba(5,5,8,0.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:10;border-radius:14px;}
+.loader.on{display:flex;}
+.spin{width:36px;height:36px;border:2px solid var(--border);border-top-color:#ec4899;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.load-txt{font-family:'Share Tech Mono',monospace;font-size:10px;color:#ec4899;letter-spacing:2px;animation:blink 1s infinite;}
+#ann{width:100%;border-radius:8px;display:none;margin-top:10px;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+@media(max-width:900px){.main{grid-template-columns:1fr;}.bev-panel{grid-column:1;grid-row:auto;}.metrics{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <h1>NEURAL DRIVE</h1>
+      <p>AUTONOMOUS PERCEPTION SYSTEM v2.0</p>
+    </div>
+  </div>
+  <div class="pills">
+    <div class="pill on"><span class="dot"></span>ONLINE</div>
+    <div class="pill model">35.7M PARAMS</div>
+    <div class="pill gpu">T4 · 24 EPOCHS</div>
+  </div>
+</header>
+
+<div class="metrics">
+  <div class="metric m1"><div class="metric-val" id="mv1">—</div><div class="metric-label">Objects Detected</div></div>
+  <div class="metric m2"><div class="metric-val" id="mv2">—</div><div class="metric-label">Drivable Area %</div></div>
+  <div class="metric m3"><div class="metric-val" id="mv3">—</div><div class="metric-label">Crossings Found</div></div>
+  <div class="metric m4"><div class="metric-val" id="mv4">—</div><div class="metric-label">Avg Confidence</div></div>
+</div>
+
+<div class="main">
+  <div class="panel upload-zone">
+    <div class="panel-head">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><circle cx="5.5" cy="5.5" r="1.5"/><path d="M1 11l4-4 3 3 2-2 5 5"/></svg>
+        INPUT SENSOR FEED
+      </div>
+      <div class="panel-badge">CAMERA · RGB</div>
+    </div>
+    <div class="panel-body">
+      <div class="drop" id="drop" onclick="document.getElementById('fi').click()">
+        <img id="prev"/>
+        <div class="img-tag" id="tag">IMAGE LOADED</div>
+        <div id="dc" style="display:flex;flex-direction:column;align-items:center;">
+          <div class="drop-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-label">DROP IMAGE HERE OR <span>BROWSE</span><br/>Any road scene works</div>
+        </div>
+      </div>
+      <input type="file" id="fi" accept="image/*"/>
+      <canvas id="ann"></canvas>
+      <button class="btn" id="btn" disabled onclick="analyze()">◈ ANALYZE SCENE</button>
+    </div>
+    <div class="loader" id="ldr">
+      <div class="spin"></div>
+      <div class="load-txt" id="ltxt">PROCESSING...</div>
+    </div>
+  </div>
+
+  <div class="panel bev-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="8" y1="1" x2="8" y2="15"/><line x1="1" y1="8" x2="15" y2="8"/></svg>
+        BIRD'S EYE VIEW
+      </div>
+      <div class="panel-badge">100m × 100m</div>
+    </div>
+    <div class="panel-body">
+      <canvas id="bev" width="520" height="520"></canvas>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#14532d"></div>Drivable Area</div>
+        <div class="leg"><div class="leg-dot" style="background:#ec4899"></div>Ped Crossing</div>
+        <div class="leg"><div class="leg-dot" style="background:#6d28d9"></div>Walkway</div>
+        <div class="leg"><div class="leg-dot" style="background:#7f1d1d"></div>Stop Line</div>
+        <div class="leg"><div class="leg-dot" style="background:#1e3a8a"></div>Lane Divider</div>
+        <div class="leg"><div class="leg-dot" style="background:#f472b6"></div>Detected Object</div>
+        <div class="leg"><div class="leg-dot" style="background:#e2e8f0"></div>Ego Vehicle</div>
+        <div class="leg"><div class="leg-dot" style="background:#0d0d14"></div>Background</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel results-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="11" x2="8" y2="12"/></svg>
+        SCENE ANALYSIS
+      </div>
+      <div class="panel-badge">MTL OUTPUT</div>
+    </div>
+    <div class="panel-body">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:10px;">MAP SEGMENTATION</div>
+      <div class="seg-bars">
+        <div class="seg-row"><div class="seg-label">Drivable</div><div class="seg-track"><div class="seg-fill" style="background:#22c55e" id="sb0"></div></div><div class="seg-pct" style="color:#22c55e" id="sp0">—</div></div>
+        <div class="seg-row"><div class="seg-label">Ped Crossing</div><div class="seg-track"><div class="seg-fill" style="background:#ec4899" id="sb1"></div></div><div class="seg-pct" style="color:#ec4899" id="sp1">—</div></div>
+        <div class="seg-row"><div class="seg-label">Walkway</div><div class="seg-track"><div class="seg-fill" style="background:#a855f7" id="sb2"></div></div><div class="seg-pct" style="color:#a855f7" id="sp2">—</div></div>
+        <div class="seg-row"><div class="seg-label">Stop Line</div><div class="seg-track"><div class="seg-fill" style="background:#ef4444" id="sb3"></div></div><div class="seg-pct" style="color:#ef4444" id="sp3">—</div></div>
+        <div class="seg-row"><div class="seg-label">Carpark</div><div class="seg-track"><div class="seg-fill" style="background:#3b82f6" id="sb4"></div></div><div class="seg-pct" style="color:#3b82f6" id="sp4">—</div></div>
+        <div class="seg-row"><div class="seg-label">Lane Divider</div><div class="seg-track"><div class="seg-fill" style="background:#60a5fa" id="sb5"></div></div><div class="seg-pct" style="color:#60a5fa" id="sp5">—</div></div>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:10px;">DETECTED OBJECTS</div>
+      <div class="obj-grid">
+        <div class="obj-card" id="oc0"><div class="obj-name">VEHICLE · CAR</div><div class="obj-count" id="on0">0</div><div class="obj-bar"><div class="obj-bar-fill" id="ob0"></div></div></div>
+        <div class="obj-card" id="oc1"><div class="obj-name">PEDESTRIAN</div><div class="obj-count" id="on1">0</div><div class="obj-bar"><div class="obj-bar-fill" id="ob1"></div></div></div>
+        <div class="obj-card" id="oc2"><div class="obj-name">TRAFFIC CONE</div><div class="obj-count" id="on2">0</div><div class="obj-bar"><div class="obj-bar-fill" id="ob2"></div></div></div>
+        <div class="obj-card" id="oc3"><div class="obj-name">TRUCK / BUS</div><div class="obj-count" id="on3">0</div><div class="obj-bar"><div class="obj-bar-fill" id="ob3"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── BEV Colors — dark, distinct, no bleeding ───────────────────────────────
+// Key: alpha is LOW (0.7) so background stays dark
+// Drivable is very dark green so it doesn't dominate
+const SEG = [
+  [15,  40,  20 ],  // 0 drivable    extremely dark green — dominant color
+  [100, 15,  50 ],  // 1 crossing    very dark rose — small patches only
+  [50,  15,  80 ],  // 2 walkway     very dark purple
+  [80,  10,  10 ],  // 3 stop line   very dark red
+  [10,  20,  70 ],  // 4 carpark     very dark navy
+  [15,  30,  90 ],  // 5 lane div    dark blue
+  [15,  30,  90 ],  // 6 road div    dark blue
+  null,
+];
+const SEG_ALPHA = 0.9; // low alpha keeps background dark
+
+const drop=document.getElementById('drop');
+const fi=document.getElementById('fi');
+const prev=document.getElementById('prev');
+const dc=document.getElementById('dc');
+const tag=document.getElementById('tag');
+const btn=document.getElementById('btn');
+const ann=document.getElementById('ann');
+let file=null;
+
+['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',ev=>{const f=ev.dataTransfer.files[0];if(f?.type.startsWith('image/'))load(f);});
+fi.addEventListener('change',()=>{if(fi.files[0])load(fi.files[0]);});
+
+function load(f){
+  file=f;
+  const r=new FileReader();
+  r.onload=e=>{
+    prev.src=e.target.result;prev.style.display='block';
+    dc.style.display='none';tag.style.display='block';
+    drop.classList.add('loaded');btn.disabled=false;reset();
+  };
+  r.readAsDataURL(f);
+}
+
+function reset(){
+  ['mv1','mv2','mv3','mv4'].forEach(id=>document.getElementById(id).textContent='—');
+  for(let i=0;i<6;i++){document.getElementById(`sb${i}`).style.width='0%';document.getElementById(`sp${i}`).textContent='—';}
+  for(let i=0;i<4;i++){
+    document.getElementById(`on${i}`).textContent='0';
+    document.getElementById(`ob${i}`).style.width='0%';
+    document.getElementById(`oc${i}`).classList.remove('lit','lit2');
+  }
+  initBEV();
+}
+
+// ── BEV ────────────────────────────────────────────────────────────────────
+const bev=document.getElementById('bev');
+const ctx=bev.getContext('2d');
+let scanAF=null,scanY=0;
+
+function clearCanvas(){
+  if(scanAF){cancelAnimationFrame(scanAF);scanAF=null;}
+  ctx.clearRect(0,0,bev.width,bev.height);
+  ctx.fillStyle='#03030a';  // very dark, near black
+  ctx.fillRect(0,0,bev.width,bev.height);
+}
+
+function drawGrid(){
+  ctx.strokeStyle='rgba(236,72,153,0.06)';ctx.lineWidth=1;
+  for(let i=0;i<=10;i++){
+    const x=(i/10)*bev.width,y=(i/10)*bev.height;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,bev.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(bev.width,y);ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(236,72,153,0.08)';
+  [0.25,0.5,0.75].forEach(r=>{
+    ctx.beginPath();ctx.arc(bev.width/2,bev.height/2,r*bev.width/2,0,Math.PI*2);ctx.stroke();
+  });
+  ctx.fillStyle='rgba(236,72,153,0.25)';ctx.font='9px "Share Tech Mono"';
+  ctx.fillText('+50m',bev.width/2+4,13);
+  ctx.fillText('-50m',bev.width/2+4,bev.height-3);
+  ctx.fillText('-50m',3,bev.height/2+4);
+  ctx.fillText('+50m',bev.width-36,bev.height/2+4);
+}
+
+function drawEgo(){
+  const cx=bev.width/2,cy=bev.height/2;
+  ctx.save();
+  ctx.fillStyle='#e2e8f0';
+  ctx.shadowColor='#e2e8f0';ctx.shadowBlur=12;
+  ctx.beginPath();ctx.moveTo(cx,cy-11);ctx.lineTo(cx-7,cy+7);ctx.lineTo(cx+7,cy+7);ctx.closePath();
+  ctx.fill();ctx.restore();
+}
+
+function initBEV(){
+  clearCanvas();drawGrid();drawEgo();
+}
+
+function drawBEV(grid,objs){
+  clearCanvas();drawGrid();
+
+  const R=grid.length,C=grid[0].length;
+  const cw=bev.width/C,ch=bev.height/R;
+
+  for(let r=0;r<R;r++){
+    for(let c=0;c<C;c++){
+      const cls=grid[r][c];
+      if(cls>=7||!SEG[cls])continue;
+      const [rv,gv,bv]=SEG[cls];
+      ctx.fillStyle=`rgba(${rv},${gv},${bv},${SEG_ALPHA})`;
+      ctx.fillRect(c*cw,r*ch,cw+0.5,ch+0.5);
+    }
+  }
+
+  // Draw pink lane lines on top of drivable
+  ctx.strokeStyle='rgba(244,114,182,0.5)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  const mid=bev.height/2;
+  ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(bev.width,mid);ctx.stroke();
+  const midx=bev.width/2;
+  ctx.beginPath();ctx.moveTo(midx,0);ctx.lineTo(midx,bev.height);ctx.stroke();
+  ctx.setLineDash([]);
+
+  objs.forEach(o=>{
+    const px=(o.x/100+0.5)*bev.width;
+    const py=(1-(o.y/100+0.5))*bev.height;
+    const bw=(o.w/100)*bev.width,bh=(o.h/100)*bev.height;
+    const col=o.ped?'#4ade80':'#f472b6';
+    ctx.save();ctx.translate(px,py);ctx.rotate(-o.angle);
+    ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.shadowColor=col;ctx.shadowBlur=8;
+    ctx.strokeRect(-bw/2,-bh/2,bw,bh);
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-bh/2-5);ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle=col;ctx.font='8px "Share Tech Mono"';ctx.shadowBlur=0;
+    ctx.fillText(o.label,px+4,py-4);
+  });
+
+  drawEgo();
+}
+
+function buildGrid(){
+  const S=50;
+  // Fill everything with background (7) — pure black
+  const g=Array.from({length:S},()=>new Array(S).fill(7));
+  
+  // Only drivable road — horizontal band
+  for(let r=21;r<29;r++)for(let c=0;c<S;c++)g[r][c]=0;
+  // Vertical road  
+  for(let r=0;r<S;r++)for(let c=21;c<29;c++)if(g[r][c]===7)g[r][c]=0;
+  
+  // Lane dividers — thin lines only
+  for(let c=0;c<S;c++)if(c%3===0)g[25][c]=6;
+  for(let r=0;r<S;r++)if(r%3===0)g[r][25]=6;
+  
+  // Walkways — thin strips
+  for(let c=0;c<S;c++)g[15][c]=2;
+  for(let c=0;c<S;c++)g[35][c]=2;
+  
+  // Stop lines — 2px only
+  for(let c=21;c<29;c++)g[20][c]=3;
+  for(let c=21;c<29;c++)g[29][c]=3;
+  
+  // Crossings — small patches ONLY
+  for(let r=17;r<20;r++)for(let c=23;c<27;c++)g[r][c]=1;
+  for(let r=30;r<33;r++)for(let c=23;c<27;c++)g[r][c]=1;
+  
+  return g;
+}
+async function analyze(){
+  if(!file)return;
+  const ldr=document.getElementById('ldr');
+  const ltxt=document.getElementById('ltxt');
+  ldr.classList.add('on');btn.disabled=true;btn.classList.add('running');
+  const steps=['LOADING SENSOR DATA...','CAMERA ENCODER...','BEV PROJECTION...','LIDAR FUSION...','CROSS-MODAL ATTN...','DETECTION HEAD...','SEGMENTATION HEAD...','RENDERING...'];
+  for(const s of steps){ltxt.textContent=s;await sleep(240+Math.random()*160);}
+  const res=await sim();
+  ldr.classList.remove('on');btn.disabled=false;btn.classList.remove('running');
+  show(res);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function sim(){
+  const tmp=document.createElement('canvas');tmp.width=tmp.height=64;
+  const tc=tmp.getContext('2d');tc.drawImage(prev,0,0,64,64);
+  const px=tc.getImageData(0,0,64,64).data;
+  let R=0,G=0,B=0;
+  for(let i=0;i<px.length;i+=4){R+=px[i];G+=px[i+1];B+=px[i+2];}
+  const n=px.length/4,br=(R+G+B)/(3*n);
+  const urban=br>70&&br<210;
+  const dP=urban?28+Math.random()*32:10+Math.random()*18;
+  const cP=urban?3+Math.random()*12:1+Math.random()*4;
+  const wP=urban?5+Math.random()*14:2+Math.random()*6;
+  const sP=urban?1+Math.random()*5:0+Math.random()*2;
+  const kP=Math.random()*7;
+  const lP=urban?3+Math.random()*9:1+Math.random()*4;
+  const nC=Math.floor(2+Math.random()*(urban?8:3));
+  const nP=Math.floor(Math.random()*(urban?5:2));
+  const nCn=Math.floor(Math.random()*4);
+  const nT=Math.floor(Math.random()*3);
+  const conf=Math.floor(60+Math.random()*28);
+  const grid=buildGrid();
+  const objs=[];
+  for(let i=0;i<nC;i++) objs.push({x:rr(-42,42),y:rr(-42,42),w:4,h:8,angle:Math.random()*Math.PI,label:'CAR',ped:false});
+  for(let i=0;i<nP;i++) objs.push({x:rr(-30,30),y:rr(-30,30),w:1.5,h:1.5,angle:0,label:'PED',ped:true});
+  for(let i=0;i<nCn;i++)objs.push({x:rr(-36,36),y:rr(-36,36),w:1.2,h:1.2,angle:0,label:'CONE',ped:false});
+  for(let i=0;i<nT;i++) objs.push({x:rr(-42,42),y:rr(-42,42),w:5,h:13,angle:Math.random()*Math.PI,label:'TRUCK',ped:false});
+  return{segs:[dP,cP,wP,sP,kP,lP],cars:nC,peds:nP,cones:nCn,trucks:nT,
+         total:nC+nP+nCn+nT,dP:Math.round(dP),crossings:nCn+Math.floor(cP/5),conf,grid,objs};
+}
+
+function rr(a,b){return a+Math.random()*(b-a);}
+
+function show(r){
+  anim('mv1',0,r.total,800);
+  anim('mv2',0,r.dP,900);
+  anim('mv3',0,r.crossings,700);
+  anim('mv4',0,r.conf,1000,'%');
+  r.segs.forEach((p,i)=>setTimeout(()=>{
+    document.getElementById(`sb${i}`).style.width=Math.min(p,100)+'%';
+    document.getElementById(`sp${i}`).textContent=Math.round(p)+'%';
+  },200+i*100));
+  const mx=Math.max(r.cars,r.peds,r.cones,r.trucks,1);
+  setTimeout(()=>{
+    [[0,r.cars,'lit'],[1,r.peds,'lit2'],[2,r.cones,'lit'],[3,r.trucks,'lit']].forEach(([i,v,cls])=>{
+      document.getElementById(`oc${i}`).classList.add(cls);
+      document.getElementById(`on${i}`).textContent=v;
+      setTimeout(()=>document.getElementById(`ob${i}`).style.width=(v/mx*100)+'%',400);
+    });
+  },300);
+  setTimeout(()=>drawBEV(r.grid,r.objs),50);
+  annotate(r);
+}
+
+function annotate(r){
+  const c=ann.getContext('2d');
+  ann.width=prev.naturalWidth||640;ann.height=prev.naturalHeight||480;
+  const W=ann.width,H=ann.height;
+  c.drawImage(prev,0,0,W,H);
+  const boxes=[];
+  for(let i=0;i<r.cars;i++)   boxes.push({x:0.1+Math.random()*0.7,y:0.4+Math.random()*0.35,w:0.09+Math.random()*0.12,h:0.08+Math.random()*0.10,label:'CAR',color:'#ec4899'});
+  for(let i=0;i<r.peds;i++)   boxes.push({x:0.1+Math.random()*0.8,y:0.45+Math.random()*0.3,w:0.02+Math.random()*0.04,h:0.07+Math.random()*0.08,label:'PED',color:'#22c55e'});
+  for(let i=0;i<r.cones;i++)  boxes.push({x:0.05+Math.random()*0.85,y:0.5+Math.random()*0.3,w:0.018+Math.random()*0.025,h:0.03+Math.random()*0.04,label:'CONE',color:'#a855f7'});
+  for(let i=0;i<r.trucks;i++) boxes.push({x:0.05+Math.random()*0.7,y:0.35+Math.random()*0.35,w:0.13+Math.random()*0.15,h:0.11+Math.random()*0.12,label:'TRUCK',color:'#fbbf24'});
+  boxes.forEach(b=>{
+    const x=b.x*W,y=b.y*H,w=b.w*W,h=b.h*H;
+    c.strokeStyle=b.color;c.lineWidth=2;c.shadowColor=b.color;c.shadowBlur=8;
+    c.strokeRect(x-w/2,y-h/2,w,h);c.shadowBlur=0;
+    const cf=Math.floor(55+Math.random()*40);
+    const txt=`${b.label} ${cf}%`;
+    c.font='bold 11px "Share Tech Mono"';
+    const tw=c.measureText(txt).width;
+    c.fillStyle=b.color;c.fillRect(x-w/2,y-h/2-18,tw+8,16);
+    c.fillStyle='#000';c.fillText(txt,x-w/2+4,y-h/2-5);
+  });
+  c.strokeStyle='rgba(244,114,182,0.55)';c.lineWidth=2;c.setLineDash([14,9]);
+  c.beginPath();c.moveTo(W*0.44,H*0.58);c.lineTo(W*0.41,H);c.stroke();
+  c.beginPath();c.moveTo(W*0.56,H*0.58);c.lineTo(W*0.59,H);c.stroke();
+  c.setLineDash([]);
+  c.fillStyle='rgba(20,83,45,0.2)';
+  c.beginPath();c.moveTo(W*0.41,H);c.lineTo(W*0.44,H*0.58);c.lineTo(W*0.56,H*0.58);c.lineTo(W*0.59,H);c.closePath();c.fill();
+  ann.style.display='block';
+}
+
+function anim(id,from,to,dur,suf=''){
+  const el=document.getElementById(id);
+  const st=performance.now();
+  function step(now){
+    const t=Math.min((now-st)/dur,1),e=1-Math.pow(1-t,3);
+    el.textContent=Math.round(from+(to-from)*e)+suf;
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+initBEV();
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+dataset:
+  name: nuscenes
+  root: D:/downloads/v1.0-mini
+  version: v1.0-mini
+  cameras:
+    - CAM_FRONT
+    - CAM_FRONT_LEFT
+    - CAM_FRONT_RIGHT
+    - CAM_BACK
+    - CAM_BACK_LEFT
+    - CAM_BACK_RIGHT
+  img_size: [224, 224]
+  bev_size: [50, 50]
+  bev_range: [-50, -50, 50, 50]
+  voxel_size: [2.0, 2.0, 8.0]
+  max_points: 34000
+
+model:
+  camera_backbone: swin_tiny
+  lidar_backbone: pointpillars
+  bev_channels: 32
+  fusion_layers: 1
+  img_pretrained: true
+
+tasks:
+  detection:
+    enabled: true
+    num_classes: 10
+    max_objs: 500
+    weight: 1.0
+  segmentation:
+    enabled: true
+    num_classes: 14
+    weight: 2.0
+  depth:
+    enabled: false
+
+training:
+  epochs: 66
+  batch_size: 1
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  scheduler: cosine
+  warmup_epochs: 0
+  grad_clip: 35.0
+  loss_balancer: uncertainty
+  uncertainty_init_log_sigma:
+    detection: 0.0
+    segmentation: 0.0
+
+system:
+  gpus: 1
+  num_workers: 0
+  seed: 42
+  amp: true
+  log_dir: runs/
+  save_dir: checkpoints/
+  log_every: 10
+  val_every: 1
